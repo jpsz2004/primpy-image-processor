@@ -142,7 +142,7 @@ def extraerCapaRoja(imagen:np.array):
 
     imagen = imagen/255
 
-    imagen[:,:,1] = imagen[:,:,2] = 0
+    imagen[:,:,0] = imagen[:,:,1] = 0
 
     return imagen
 
@@ -184,7 +184,7 @@ def extraerCapaAzul(imagen:np.array):
 
     imagen = imagen/255
 
-    imagen[:,:,0] = imagen[:,:,1] = 0
+    imagen[:,:,2] = imagen[:,:,1] = 0
 
     return imagen
 
@@ -224,7 +224,7 @@ def extraerCapaCian(imagen:np.array):
     '''
 
     imagen = imagen/255
-    imagen[:,:,1] = imagen[:,:,2] = 1
+    imagen[:,:,0] = imagen[:,:,1] = 1
 
     return imagen
 
@@ -244,7 +244,7 @@ def extraerCapaAmarilla(imagen:np.array):
     '''
 
     imagen = imagen/255
-    imagen[:,:,0] = imagen[:,:,1] = 1
+    imagen[:,:,1] = imagen[:,:,2] = 1
 
     return imagen
 
@@ -345,7 +345,7 @@ def fusionarImagenesConEq(imagen1:np.array, imagen2:np.array, factorEq:float):
     Parámetros:
         - imagen1 (np.array) - Imagen 1 a fusionar 
         - imagen2 (np.array) - Imagen 2 a fusionar
-        - factorEq (float) - Factor de ecualización entre 0 y 1
+        - factorEq (float) - Factor de ecualización mayor que 0
     
     Retorna:
         - imagen (np.array) - Imagen fusionada
@@ -355,12 +355,8 @@ def fusionarImagenesConEq(imagen1:np.array, imagen2:np.array, factorEq:float):
     imagen2 = imagen2/255
 
     if imagen1.shape != imagen2.shape:
-        raise ValueError("Las imagenes deben tener el mismo tamaño")
-    else:
-        if factorEq < 0:
-            raise ValueError("El factor de ecualización debe ser mayor que 0")
-        else:
-            return (imagen1*factorEq) + (1 - factorEq)*imagen2
+        return None
+    return factorEq*imagen1 + (1 - factorEq)*imagen2
 
 # ---------------------------------------------------------------------- #
 def ecualizarImg(imagen:np.array, factor:float):
