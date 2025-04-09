@@ -141,10 +141,12 @@ class ImageViewer(ctk.CTk):
 
     def create_transform_sidebar(self):
         # Etiqueta y slider para rotación
-        ctk.CTkLabel(self.transformation_sidebar, text="Rotar (°):").pack()
+        #Hacer la etiqueta de manera que quede encima del slider
+        self.rot_label = ctk.CTkLabel(self.transformation_sidebar, text="Rotación: 0.00°")
+        self.rot_label.pack()
         self.rot_slider = ctk.CTkSlider(self.transformation_sidebar, from_=-360, to=360, number_of_steps=720)
         self.rot_slider.pack(pady=5)
-
+        self.rot_slider.configure(command=self.on_rot_slider_change)
         # Traslación
         ctk.CTkLabel(self.transformation_sidebar, text="Trasladar dx, dy:").pack()
         self.dx_entry = ctk.CTkEntry(self.transformation_sidebar, placeholder_text="dx")
@@ -185,7 +187,11 @@ class ImageViewer(ctk.CTk):
         self.zoom_y_entry = ctk.CTkEntry(self.transformation_sidebar, placeholder_text="y")
         self.zoom_x_entry.pack()
         self.zoom_y_entry.pack()
+        self.zoom_label = ctk.CTkLabel(self.transformation_sidebar, text="Factor de Zoom: 1.00")
+        self.zoom_label.pack()
         self.zoom_slider = ctk.CTkSlider(self.transformation_sidebar, from_=0, to=2)
+        self.zoom_slider = ctk.CTkSlider(self.transformation_sidebar, from_=0.1, to=5, number_of_steps=200, command=self.update_zoom_label)
+        self.zoom_slider.set(1.0)  # valor inicial neutro
         self.zoom_slider.pack(pady=5)
         zoom_btn = ctk.CTkButton(self.transformation_sidebar, text="Aplicar Zoom", command=self.apply_zoom)
         zoom_btn.pack(pady=5)
@@ -279,12 +285,34 @@ class ImageViewer(ctk.CTk):
         self.display_image()
 
     def apply_translation(self):
-        # Placeholder sin funcionalidad de traducción manual
-        pass
+        if self.image is None:
+            return
+        try:
+            x = int(self.dx_entry.get())
+            y = int(self.dy_entry.get())
+        except ValueError:
+            mb.showerror("Error", "Las coordenadas deben ser valores enteros.")
+            return
+        translated = pi.trasladar(self.image, (x, y))
+        self.current_image = translated
+        self.display_image()
+
 
     def recortar(self):
-        # Placeholder sin funcionalidad de recorte manual
-        pass
+        if self.image is None:
+            return
+        try:
+            x1 = int(self.x1_entry.get())
+            x2 = int(self.x2_entry.get())
+            y1 = int(self.y1_entry.get())
+            y2 = int(self.y2_entry.get())
+        except ValueError:
+            mb.showerror("Error", "Todas las coordenadas deben ser enteros.")
+            return
+        cropped = pi.recortar(self.image, (x1, x2), (y1, y2))
+        self.current_image = cropped
+        self.display_image()
+
 
     def apply_resize(self):
         """
@@ -307,8 +335,35 @@ class ImageViewer(ctk.CTk):
         self.display_image()
 
     def apply_zoom(self):
-        # Placeholder for zoom functionality
-        pass
+        if self.image is None:
+            mb.showerror("Error", "Debe cargar una imagen antes de aplicar zoom.")
+            return
+
+        try:
+            x = int(self.zoom_x_entry.get())
+            y = int(self.zoom_y_entry.get())
+            alpha = float(self.zoom_slider.get())
+        except ValueError:
+            mb.showerror("Error", "Ingrese coordenadas válidas y asegúrese de mover el slider de zoom.")
+            return
+
+        if alpha <= 0 or alpha > 100:
+            mb.showerror("Error", "El factor de zoom debe estar entre 0 y 100.")
+            return
+
+        try:
+            zoomed = pi.zoom(self.image.copy(), alpha, (x, y))
+            zoomed_bgr = (zoomed * 255).astype(np.uint8)
+            self.current_image = zoomed_bgr
+            self.display_image()
+        except Exception as e:
+            mb.showerror("Error", f"Ocurrió un error al aplicar zoom:\n{str(e)}")
+
+
+
+    def update_zoom_label(self, value):
+        self.zoom_label.configure(text=f"Factor de Zoom: {value:.2f}")
+
 
     def apply_fusion(self):
         if self.image is not None and self.second_image is not None:
@@ -478,6 +533,15 @@ class ImageViewer(ctk.CTk):
             combined += pi.extraerCapaAmarilla(float_img.copy())
         combined = np.clip(combined, 0, 1)
         self.current_image = (combined * 255).astype(np.uint8)
+        self.display_image()
+
+    def on_rot_slider_change(self, value):
+        if self.image is None:
+            return
+        angle = int(value)
+        rotated = pi.rotar(self.image.copy(), angle)
+        self.rot_label.configure(text=f"Rotación: {value:.2f}°")
+        self.current_image = rotated
         self.display_image()
 
 if __name__ == '__main__':
